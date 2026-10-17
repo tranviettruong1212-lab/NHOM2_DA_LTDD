@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "389749623383",
+    "firebase_url": "https://daltdd-nhom2-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "daltdd-nhom2",
+    "storage_bucket": "daltdd-nhom2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:389749623383:android:0f895825f62b7c16def112",
+        "android_client_info": {
+          "package_name": "com.example.do_an_ltdd"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "389749623383-1btrh40p1i0so9r2qie87ll726d1c9u2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3Wy3_0jX5pXrJNhB2n6ei1QN_HJjRucM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "389749623383-1btrh40p1i0so9r2qie87ll726d1c9u2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

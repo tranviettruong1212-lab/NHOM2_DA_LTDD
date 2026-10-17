@@ -1,0 +1,239 @@
+TONG QUAN UNG DUNG MONEYMATE / FINANCEMANAGER
+=============================================
+
+Tai lieu nay cap nhat theo cau truc workspace va ma nguon dang co. Ten hien thi
+cua ung dung Flutter la MoneyMate; script SQL dat ten database FINANCE_MANAGER.
+
+
+1. MUC DICH VA TINH TRANG TONG QUAN
+-----------------------------------
+MoneyMate la ung dung Flutter minh hoa quan ly thu chi ca nhan: ghi nhan giao
+dich, lap ngan sach, xem thong ke va mo phong giao dich tu tai khoan ngan hang/
+vi dien tu mau.
+
+Hien tai:
+- Frontend Flutter co giao dien va chuc nang demo; du lieu giao dich/ngan sach
+  chi nam trong RAM, khong duoc luu sau khi dong ung dung.
+- Frontend chua goi API backend.
+- Backend ASP.NET Core da co project .NET 8, nhung phan dang duoc cau hinh de
+  chay la MVC scaffold co Home/Privacy. Cac tep API/auth/data duoc de lai tu
+  huong phat trien, chua duoc dang ky/noi vao luong chay hien tai.
+- Cac tai khoan ngan hang va vi dien tu tren giao dien chi la du lieu mo phong
+  phuc vu hoc tap; khong ket noi tai khoan tai chinh that.
+
+
+2. CAU TRUC TO CHUC HIEN TAI
+----------------------------
+.
+|-- app_doc/
+|   |-- SQLQuery1.sql
+|   `-- THONG_TIN_UNG_DUNG.txt
+|
+|-- app_frontend/                         (Flutter/Dart)
+|   |-- lib/
+|   |   |-- main.dart
+|   |   |-- models/
+|   |   |   |-- bank_wallet.dart
+|   |   |   |-- budget_model.dart
+|   |   |   `-- transaction_model.dart
+|   |   |-- screens/
+|   |   |   |-- home_screen.dart
+|   |   |   |-- transactions_screen.dart
+|   |   |   |-- transaction_form_screen.dart
+|   |   |   |-- transaction_.dart       (tep cu/khong thay duoc import)
+|   |   |   |-- budget_screen.dart
+|   |   |   |-- statistics_screen.dart
+|   |   |   |-- bank_wallets_screen.dart
+|   |   |   `-- linked_flow_screen.dart
+|   |   `-- services/
+|   |       `-- app_backends.dart
+|   |-- test/
+|   |   `-- widget_test.dart
+|   |-- pubspec.yaml, pubspec.lock
+|   |-- analysis_options.yaml, README.md
+|   `-- android/, ios/, web/, windows/, linux/, macos/
+|       (cau hinh va ma bootstrap nen tang Flutter)
+|
+`-- app_backend/                          (.NET)
+    |-- app_backend.sln
+    `-- app_backend/
+        |-- app_backend.csproj             (.NET 8 Web SDK)
+        |-- Program.cs                     (MVC middleware va route)
+        |-- appsettings.json
+        |-- appsettings.Development.json
+        |-- Controllers/
+        |   `-- HomeController.cs
+        |-- Views/
+        |   |-- Home/ (Index.cshtml, Privacy.cshtml)
+        |   `-- Shared/ (layout, Error, validation scripts)
+        |-- Models/
+        |   |-- Account.cs
+        |   |-- Enum.cs
+        |   |-- Household.cs
+        |   |-- HouseholdMember.cs
+        |   |-- Transaction.cs
+        |   |-- User.cs
+        |   `-- ErrorViewModel.cs
+        |-- Auth/FirebaseAuthenticationHandler.cs
+        |-- DTOs/CreateTransactionRequest.cs
+        |-- services/
+        |   |-- HouseholdAuthorizationService.cs
+        |   `-- TransactionService.cs
+        |-- Properties/launchSettings.json
+        `-- wwwroot/ (CSS, JavaScript, favicon va thu vien giao dien)
+
+Ghi chu:
+- Day la cac thu muc ma nguon hien tai; cac thu muc build/, .dart_tool/, bin/,
+  obj/ va .vs/ la san pham/cache tu dong, khong phai ma nguon nghiep vu chinh.
+- Cac thu muc Flutter android/, ios/, web/, windows/, linux/, macos/ phuc vu
+  build/khai bao nen tang; logic ung dung nam trong app_frontend/lib/.
+
+
+3. GIAO DIEN VA CHUC NANG FLUTTER
+---------------------------------
+Ung dung co Material 3, ten MoneyMate, dieu huong thanh nam muc bang
+IndexedStack trong app_frontend/lib/main.dart:
+
+1) Tong quan - screens/home_screen.dart
+   Hien so du dang quan ly, tong thu/chi, canh bao ngan sach va giao dich gan
+   day. So lieu duoc tinh tu danh sach giao dich trong bo nho.
+
+2) Giao dich - screens/transactions_screen.dart va
+   screens/transaction_form_screen.dart
+   Them, sua, xoa giao dich thu nhap/chi tieu; nhap ten, so tien, danh muc,
+   ngay va ghi chu. Form kiem tra ten khong rong va so tien hop le lon hon 0.
+
+3) Ngan sach - screens/budget_screen.dart
+   Tao/sua/xoa ngan sach theo danh muc cho thang hien tai; co che do "Du dinh"
+   so voi so du va "Dang thuc hien" so voi chi tieu; uu tien va canh bao.
+
+4) Thong ke - screens/statistics_screen.dart
+   Chon thang/nam, xem tong thu, chi, chenh lech, bieu do cot tu tao va chi
+   tieu theo danh muc.
+
+5) Tai khoan - screens/bank_wallets_screen.dart
+   Liet ke tai khoan ngan hang/vi mau; co the chen giao dich mau mot lan cho
+   moi tai khoan. Giao dien hien canh bao ro rang day la du lieu mo phong.
+
+6) Dong tien lien ket - screens/linked_flow_screen.dart
+   Truy cap tu man hinh tai khoan; tong hop giao dich mo phong theo thang,
+   ngay va nguon.
+
+
+4. TO CHUC MA NGUON FRONTEND
+----------------------------
+app_frontend/lib/main.dart
+- Khoi dong MaterialApp va cau hinh theme.
+- MainNavigation quan ly nam man hinh chinh.
+
+app_frontend/lib/models/
+- transaction_model.dart: MoneyTransaction, loai thu/chi, so tien, danh muc,
+  ngay, ghi chu, nguon giao dich.
+- budget_model.dart: Budget, danh muc, han muc, thang/nam, che do, muc uu tien.
+- bank_wallet.dart: BankWallet va loai tai khoan ngan hang/vi demo.
+
+app_frontend/lib/services/app_backends.dart
+- MoneyMateBackend la singleton ChangeNotifier quan ly cac danh sach giao dich,
+  ngan sach va tai khoan mau.
+- Xu ly them/sua/xoa giao dich, luu/xoa ngan sach va tinh so du, tong thu/chi,
+  chi tieu theo ngan sach, thong ke theo thang/danh muc.
+- Tao va tong hop giao dich mau cho chuc nang mo phong dong bo.
+- Chua co HTTP client, API URL, co so du lieu local hay luu tru ben vung.
+
+app_frontend/lib/screens/
+- Moi tep chua man hinh nghiep vu tuong ung; cac man hinh doc/cap nhat state
+  qua MoneyMateBackend.instance va lang nghe thay doi.
+- transaction_.dart ton tai trong source nhung khong thay duoc su dung tu
+  luong import chinh; man hinh form dang dung la transaction_form_screen.dart.
+
+
+5. BACKEND .NET VA CAC THANH PHAN API DU KIEN
+---------------------------------------------
+Project:
+- app_backend/app_backend.sln la solution.
+- app_backend/app_backend/app_backend.csproj su dung Microsoft.NET.Sdk.Web va
+  target net8.0; project la ASP.NET Core MVC.
+- Program.cs hien dang AddControllersWithViews(), static files, routing,
+  authorization middleware va route MVC mac dinh den Home/Index.
+- HomeController.cs va Views/Home cung cap trang Index, Privacy, Error cua
+  project scaffold. Chua thay controller REST API cho nghiep vu tai chinh.
+
+Mot so tep model/API van co trong source nhung chua duoc noi vao MVC app:
+- Auth/FirebaseAuthenticationHandler.cs: ma xu ly Bearer token Firebase va
+  tao claim UID; Program.cs hien khong dang ky authentication scheme nay.
+- DTOs/CreateTransactionRequest.cs: payload du kien cho tao giao dich.
+- services/HouseholdAuthorizationService.cs: logic kiem tra thanh vien/quyen
+  ho gia dinh; TransactionService.cs co doan logic yeu cau duyet chi.
+- Models/: Account, User, Household, HouseholdMember va Transaction; cac enum
+  dinh nghia trong Enum.cs.
+- Chua thay DbContext, migrations hoac controller de doc/ghi cac model.
+- Cac service/Auth tham chieu cac namespace va lop DB/model chua co day du trong
+  project hien tai; can hoan thien dependency va kiem tra build truoc khi xem
+  day la backend API san sang su dung.
+- appsettings*.json la file cau hinh; can kiem tra va cung cap gia tri rieng
+  cho moi moi truong, khong dua secret/credential vao tai lieu cong khai.
+
+
+6. MO HINH DU LIEU VA SQL
+-------------------------
+app_doc/SQLQuery1.sql tao database FINANCE_MANAGER va cac bang:
+- Users: nguoi dung, Firebase UID, email, ten hien thi, trang thai.
+- Households: nhom gia dinh, nguoi tao va nguong can duyet.
+- HouseholdMembers: vai tro Owner/Admin/Member, trang thai va quyen thanh vien;
+  SQL co unique index de mot nguoi chi nam trong mot household dang hoat dong.
+- Accounts: tai khoan cua nguoi dung, co the thuoc household; ho tro cash,
+  bank demo, e-wallet demo.
+- Categories: danh muc thu/chi.
+- Transactions: thu/chi/chuyen tien, nguoi tao, tai khoan, danh muc, visibility,
+  approval status, xoa mem va rowversion.
+- TransactionShares: chia se giao dich den nguoi dung duoc chon.
+- ApprovalRequests: yeu cau phe duyet cho giao dich.
+- Budgets: han muc theo household/nguoi tao/danh muc, chu ky, che do va uu tien.
+
+Schema SQL co khoa ngoai, unique/check constraints va index cho giao dich.
+Enum BudgetPeriod hien dang dong bo ve gia tri voi SQL: 0=Monthly, 1=Weekly,
+2=Yearly. SQL va enum can duoc giu dong bo neu thay doi schema.
+
+
+7. CAU HINH VA LENH PHAT TRIEN
+------------------------------
+Flutter:
+- Dart SDK constraint: ^3.9.2 trong app_frontend/pubspec.yaml.
+- Dependencies: Flutter SDK, cupertino_icons, fl_chart; dev dependencies:
+  flutter_test va flutter_lints.
+- Thuc hien lenh tu thu muc app_frontend:
+    flutter pub get
+    flutter run
+    flutter analyze
+    flutter test
+- Man hinh thong ke hien tai tu ve bieu do bang widget Flutter; fl_chart dang
+  khai bao trong dependencies nhung chua duoc import trong cac tep nghiep vu da
+  kiem tra.
+
+Backend:
+- Mo app_backend/app_backend.sln bang Visual Studio hoac chay project
+  app_backend/app_backend/app_backend.csproj voi .NET 8 SDK.
+- Properties/launchSettings.json co cac profile HTTP/HTTPS phuc vu chay local.
+- Cau hinh DB/Firebase dang co trong appsettings; tuy nhien Program.cs hien
+  chua doc/dang ky DbContext hay Firebase service.
+
+
+8. KHOANG TRONG VA VIEC CAN LAM TIEP
+------------------------------------
+- Ket noi frontend voi API: thong nhat DTO, xac thuc Firebase, REST endpoints,
+  repository/network layer va xu ly loi.
+- Hoan thien backend: dang ky xac thuc, DbContext/provider SQL Server,
+  entities con thieu, migrations, controller API va dependency packages; xu ly
+  sai khac namespace giua cac tep scaffold va tep API.
+- Them luu tru ben vung cho frontend hoac chuyen state sang API; hien tai dong
+  ung dung se mat giao dich, ngan sach va trang thai demo.
+- Test hien tai trong app_frontend/test/widget_test.dart van la test scaffold
+  "Counter increments", khong phan anh giao dien MoneyMate; nen thay bang widget
+  test cho cac man hinh/chuc nang hien tai.
+- Neu sua enum/schema, cap nhat dong thoi app_doc/SQLQuery1.sql va backend; cac
+  gia tri BudgetPeriod hien da khop nhau.
+- Kiem tra appsettings va loai bo thong tin ket noi/secret rieng truoc khi chia
+  se ma nguon.
+
+Tai lieu mo ta trang thai ma nguon hien tai, khong khang dinh frontend va
+backend da tich hop hoac da duoc kiem thu end-to-end.
