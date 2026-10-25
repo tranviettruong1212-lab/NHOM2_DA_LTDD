@@ -44,23 +44,21 @@ class TransactionsScreen extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      if (transaction.isPersisted) {
-        try {
-          await MoneyMateBackend.instance.deletePersistedTransaction(transaction.id);
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đã xóa giao dịch khỏi SQL Server.')),
-            );
-          }
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Không xóa được giao dịch: $e')),
-            );
-          }
+      try {
+        await MoneyMateBackend.instance.deletePersistedTransaction(
+          transaction.id,
+        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đã xóa giao dịch khỏi SQL Server.')),
+          );
         }
-      } else {
-        MoneyMateBackend.instance.deleteTransaction(transaction.id);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Không xóa được giao dịch: $e')),
+          );
+        }
       }
     }
   }
@@ -72,6 +70,7 @@ class TransactionsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Giao dịch')),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'transactions-add-fab',
         onPressed: () => _openForm(context, null),
         icon: const Icon(Icons.add),
         label: const Text('Thêm giao dịch'),
@@ -136,8 +135,12 @@ class TransactionsScreen extends StatelessWidget {
                           children: [
                             IconButton(
                               visualDensity: VisualDensity.compact,
-                              onPressed: t.isPersisted ? null : () => _openForm(context, t),
-                              tooltip: t.isPersisted ? 'Giao dịch máy chủ: sửa chưa được tích hợp' : 'Sửa',
+                              onPressed: t.isPersisted && t.source != 'Thủ công'
+                                  ? null
+                                  : () => _openForm(context, t),
+                              tooltip: t.isPersisted && t.source != 'Thủ công'
+                                  ? 'Không thể sửa giao dịch mô phỏng đã đồng bộ'
+                                  : 'Sửa',
                               icon: const Icon(Icons.edit, size: 18),
                             ),
                             IconButton(

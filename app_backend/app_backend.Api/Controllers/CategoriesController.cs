@@ -15,22 +15,27 @@ namespace app_backend.Api.Controllers;
 public sealed class CategoriesController(FinanceManagerDbContext db, CurrentUserService currentUserService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetExpenseCategories(CancellationToken ct)
+    public async Task<IActionResult> GetCategories([FromQuery] int type = 0, CancellationToken ct = default)
     {
+        if (type != (int)TransactionType.Expense && type != (int)TransactionType.Income)
+            return BadRequest(new { error = "invalid_category_type" });
+
         var user = await currentUserService.GetUserAsync(User, ct);
         if (user is null) return Unauthorized();
 
-        // Seed common expense categories only when the expense category table is empty.
-        if (!await db.Categories.AnyAsync(c => c.IsActive && c.Type == TransactionType.Expense, ct))
+        var categoryType = (TransactionType)type;
+        if (!await db.Categories.AnyAsync(c => c.IsActive && c.Type == categoryType, ct))
         {
-            var names = new[] { "Ăn uống", "Di chuyển", "Học tập", "Mua sắm", "Giải trí", "Sức khỏe", "Hóa đơn", "Khác" };
+            var names = categoryType == TransactionType.Expense
+                ? new[] { "Ăn uống", "Di chuyển", "Học tập", "Mua sắm", "Giải trí", "Sức khỏe", "Hóa đơn", "Khác" }
+                : new[] { "Lương", "Thưởng", "Khác" };
             foreach (var name in names)
-                db.Categories.Add(new Category { Name = name, Type = TransactionType.Expense, IsSystem = true, IsActive = true });
+                db.Categories.Add(new Category { Name = name, Type = categoryType, IsSystem = true, IsActive = true });
             await db.SaveChangesAsync(ct);
         }
 
         var categories = await db.Categories.AsNoTracking()
-            .Where(c => c.IsActive && c.Type == TransactionType.Expense)
+            .Where(c => c.IsActive && c.Type == categoryType)
             .OrderBy(c => c.Name)
             .Select(c => new { c.Id, c.Name, Type = (int)c.Type })
             .ToListAsync(ct);

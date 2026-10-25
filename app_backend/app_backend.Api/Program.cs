@@ -11,6 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 var firebaseProjectId = builder.Configuration["Firebase:ProjectId"]
     ?? throw new InvalidOperationException(
         "Chưa cấu hình Firebase:ProjectId trong appsettings.json.");
+var connectionString = builder.Configuration.GetConnectionString("MoneyMate")
+    ?? throw new InvalidOperationException(
+        "Chưa cấu hình ConnectionStrings:MoneyMate.");
 
 builder.Services.AddControllersWithViews();
 
@@ -41,25 +44,28 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // CORS cho Flutter Web
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FlutterFrontend", policy =>
     {
         policy
-            .WithOrigins(
-                "http://localhost:54811",
-                "http://127.0.0.1:54811",
-                "http://localhost:57434",
-                "http://127.0.0.1:57434"
-            )
+            .SetIsOriginAllowed(origin =>
+                allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)
+                || (Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+                    && uri.IsLoopback
+                    && (uri.Scheme == Uri.UriSchemeHttp
+                        || uri.Scheme == Uri.UriSchemeHttps)))
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
 builder.Services.AddDbContext<FinanceManagerDbContext>(options =>
-        options.UseSqlServer(
-            builder.Configuration.GetConnectionString("MoneyMate")));
+    options.UseSqlServer(connectionString));
     
     builder.Services.AddScoped<CurrentUserService>();
     builder.Services.AddScoped<HouseholdAuthorizationService>();

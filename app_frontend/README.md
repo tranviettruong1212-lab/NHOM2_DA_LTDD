@@ -1,16 +1,36 @@
-# do_an_ltdd
+# Flutter frontend
 
-A new Flutter project.
+Ứng dụng Flutter cho web và thiết bị di động. Hướng dẫn khởi chạy đầy đủ (bao
+gồm SQL Server, Firebase, backend, CORS và cấu hình URL API) nằm tại
+[README dự án](../README.md).
 
-## Getting Started
+## Chạy nhanh
 
-This project is a starting point for a Flutter application.
+Từ thư mục này:
 
-A few resources to get you started if this is your first Flutter project:
+```powershell
+flutter pub get
+flutter run -d chrome
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Backend phải đang chạy tại `http://localhost:5265` và Firebase phải được cấu
+hình để đăng nhập và lấy dữ liệu từ API.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Để đổi cổng API:
+
+```powershell
+flutter run -d chrome --dart-define=API_PORT=6000
+```
+
+Để đặt đầy đủ URL API (ưu tiên hơn `API_PORT`):
+
+```powershell
+flutter run -d chrome --dart-define=API_BASE_URL=https://localhost:7149
+```
+
+## Kiểm tra
+
+```powershell
+flutter analyze
+flutter test
+```

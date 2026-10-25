@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/transaction_model.dart';
-import '../models/budget_model.dart';
+import '../models/api_budget_model.dart';
 import '../models/bank_wallet.dart';
+import 'budget_api_service.dart';
 import 'transaction_api_service.dart';
 
 class MoneyMateBackend extends ChangeNotifier {
@@ -11,7 +12,7 @@ class MoneyMateBackend extends ChangeNotifier {
   static final MoneyMateBackend instance = MoneyMateBackend._();
 
   final List<MoneyTransaction> _transactions = [];
-  final List<Budget> _budgets = [];
+  final List<ApiBudget> _budgets = [];
 
   // Tài khoản mẫu, không kết nối dịch vụ thật.
   final List<BankWallet> _wallets = const [
@@ -43,6 +44,7 @@ class MoneyMateBackend extends ChangeNotifier {
 
   final Set<String> _syncingDemoIds = {};
   final TransactionApiService _transactionApi = TransactionApiService.instance;
+  final BudgetApiService _budgetApi = BudgetApiService.instance;
 
   bool isWalletSyncing(String walletId) => _syncingDemoIds.contains(walletId);
 
@@ -54,7 +56,10 @@ class MoneyMateBackend extends ChangeNotifier {
         .toSet();
     BankWallet? wallet;
     for (final candidate in _wallets) {
-      if (candidate.id == walletId) { wallet = candidate; break; }
+      if (candidate.id == walletId) {
+        wallet = candidate;
+        break;
+      }
     }
     if (wallet == null) return false;
     return wallet.type == WalletType.bank
@@ -62,16 +67,24 @@ class MoneyMateBackend extends ChangeNotifier {
         : kinds.contains('expense');
   }
 
-  /// Tải lịch sử giao dịch đã lưu trong SQL Server. Các giao dịch thủ công
-  /// hiện chỉ nằm trong bộ nhớ được giữ lại trong phiên đang chạy.
+  /// Tải lịch sử giao dịch đã lưu trong SQL Server.
   Future<void> loadFromApi() async {
     final remote = await _transactionApi.getTransactions();
-    final localManual = _transactions.where((t) => !t.isPersisted).toList();
+    final budgets = await _budgetApi.getBudgets();
     _transactions
       ..clear()
-      ..addAll(remote)
-      ..addAll(localManual);
+      ..addAll(remote);
+    _budgets
+      ..clear()
+      ..addAll(budgets);
     _transactions.sort((a, b) => b.date.compareTo(a.date));
+    notifyListeners();
+  }
+
+  void setBudgets(List<ApiBudget> budgets) {
+    _budgets
+      ..clear()
+      ..addAll(budgets);
     notifyListeners();
   }
 
@@ -82,7 +95,7 @@ class MoneyMateBackend extends ChangeNotifier {
 
   List<MoneyTransaction> get transactions => List.unmodifiable(_transactions);
 
-  List<Budget> get budgets => List.unmodifiable(_budgets);
+  List<ApiBudget> get budgets => List.unmodifiable(_budgets);
 
   List<BankWallet> get wallets => List.unmodifiable(_wallets);
 
@@ -97,152 +110,14 @@ class MoneyMateBackend extends ChangeNotifier {
 
   double get balance => totalIncome - totalExpense;
 
-  void addTransaction(MoneyTransaction transaction) {
-    _transactions.insert(0, transaction);
-    notifyListeners();
+  Future<void> addTransaction(MoneyTransaction transaction) async {
+    await _transactionApi.createManualTransaction(transaction);
+    await loadFromApi();
   }
 
-  void updateTransaction(MoneyTransaction updated) {
-    final index = _transactions.indexWhere((t) => t.id == updated.id);
-
-    if (index == -1) return;
-
-    _transactions[index] = updated;
-    notifyListeners();
-  }
-
-  void deleteTransaction(String id) {
-    _transactions.removeWhere((t) => t.id == id);
-    notifyListeners();
-  }
-
-  void saveBudget(Budget budget) {
-    // Ưu tiên cập nhật đúng ngân sách đang sửa.
-    final idIndex = _budgets.indexWhere((b) => b.id == budget.id);
-
-    if (idIndex != -1) {
-      _budgets[idIndex] = budget;
-    } else {
-      // Không tạo trùng danh mục trong cùng một tháng.
-      final categoryIndex = _budgets.indexWhere(
-        (b) =>
-            b.category == budget.category &&
-            b.month == budget.month &&
-            b.year == budget.year,
-      );
-
-      if (categoryIndex != -1) {
-        _budgets[categoryIndex] = Budget(
-          id: _budgets[categoryIndex].id,
-          category: budget.category,
-          limit: budget.limit,
-          month: budget.month,
-          year: budget.year,
-          mode: budget.mode,
-          priority: budget.priority,
-        );
-      } else {
-        _budgets.add(budget);
-      }
-    }
-
-    notifyListeners();
-  }
-
-  void deleteBudget(String id) {
-    _budgets.removeWhere((b) => b.id == id);
-    notifyListeners();
-  }
-
-  double spentInBudget(Budget budget) {
-    return _transactions
-        .where(
-          (t) =>
-              t.type == TransactionType.expense &&
-              t.category == budget.category &&
-              t.date.month == budget.month &&
-              t.date.year == budget.year,
-        )
-        .fold(0.0, (sum, t) => sum + t.amount);
-  }
-
-  // Ngân sách dự định dùng số dư hiện tại để đánh giá.
-  // Ngân sách đang thực hiện dùng hạn mức trừ chi tiêu thực tế.
-  double budgetRemaining(Budget budget) {
-    if (budget.mode == BudgetMode.planned) {
-      return balance - budget.limit;
-    }
-
-    return budget.limit - spentInBudget(budget);
-  }
-
-  bool plannedBudgetAffordable(Budget budget) {
-    return balance >= budget.limit;
-  }
-
-  double budgetProgress(Budget budget) {
-    if (budget.mode == BudgetMode.planned || budget.limit <= 0) {
-      return 0;
-    }
-
-    return (spentInBudget(budget) / budget.limit).clamp(0.0, 1.0).toDouble();
-  }
-
-  String? budgetStatus(Budget budget) {
-    if (budget.mode == BudgetMode.planned) {
-      if (plannedBudgetAffordable(budget)) {
-        return 'Đủ tiền để thực hiện dự định';
-      }
-
-      return 'Chưa đủ ${(budget.limit - balance).clamp(0.0, double.infinity).toStringAsFixed(0)} đ';
-    }
-
-    final spent = spentInBudget(budget);
-    final ratio = spent / budget.limit;
-
-    if (spent > budget.limit) {
-      return 'Đã vượt ngân sách '
-          '${(spent - budget.limit).toStringAsFixed(0)} đ';
-    }
-
-    if (ratio >= 0.8) {
-      return 'Sắp hết ngân sách: '
-          '${(ratio * 100).round()}%';
-    }
-
-    return 'Đang sử dụng bình thường';
-  }
-
-  // Chỉ đưa các ngân sách đặc biệt lên khu thông báo.
-  List<String> get budgetNotifications {
-    final now = DateTime.now();
-
-    final currentBudgets = _budgets
-        .where((b) => b.month == now.month && b.year == now.year)
-        .toList();
-
-    currentBudgets.sort((a, b) => a.priority.compareTo(b.priority));
-
-    final messages = <String>[];
-
-    for (final budget in currentBudgets) {
-      final status = budgetStatus(budget);
-
-      if (status == null) continue;
-
-      final isSpecial = budget.mode == BudgetMode.planned
-          ? !plannedBudgetAffordable(budget)
-          : spentInBudget(budget) / budget.limit >= 0.8;
-
-      if (isSpecial) {
-        messages.add(
-          'Ưu tiên ${budget.priority} • '
-          '${budget.category}: $status',
-        );
-      }
-    }
-
-    return messages;
+  Future<void> updateTransaction(MoneyTransaction updated) async {
+    await _transactionApi.updateManualTransaction(updated);
+    await loadFromApi();
   }
 
   double incomeInMonth(int month, int year) {
@@ -293,6 +168,28 @@ class MoneyMateBackend extends ChangeNotifier {
       return created;
     } finally {
       _syncingDemoIds.remove(walletId);
+      notifyListeners();
+    }
+  }
+
+  Future<int> createDemoTransactionBundle({
+    required String accountName,
+    required WalletType walletType,
+    required List<DemoTransactionEntry> entries,
+  }) async {
+    final operationKey = 'bundle:${accountName.trim().toLowerCase()}';
+    if (!_syncingDemoIds.add(operationKey)) return 0;
+    notifyListeners();
+    try {
+      final created = await _transactionApi.createDemoBundle(
+        accountName: accountName,
+        walletType: walletType,
+        entries: entries,
+      );
+      await loadFromApi();
+      return created;
+    } finally {
+      _syncingDemoIds.remove(operationKey);
       notifyListeners();
     }
   }

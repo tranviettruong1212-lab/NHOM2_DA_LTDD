@@ -124,21 +124,23 @@ IndexedStack trong app_frontend/lib/main.dart:
 ----------------------------
 app_frontend/lib/main.dart
 - Khoi dong MaterialApp va cau hinh theme.
-- MainNavigation quan ly nam man hinh chinh.
+- AuthGate kiem tra trang thai Firebase; FinanceNavigation quan ly cac man hinh.
 
 app_frontend/lib/models/
 - transaction_model.dart: MoneyTransaction, loai thu/chi, so tien, danh muc,
   ngay, ghi chu, nguon giao dich.
-- budget_model.dart: Budget, danh muc, han muc, thang/nam, che do, muc uu tien.
+- api_budget_model.dart: DTO ngan sach tu backend; budget_model.dart la model
+  legacy khong con duoc man hinh API su dung.
 - bank_wallet.dart: BankWallet va loai tai khoan ngan hang/vi demo.
 
 app_frontend/lib/services/app_backends.dart
-- MoneyMateBackend la singleton ChangeNotifier quan ly cac danh sach giao dich,
-  ngan sach va tai khoan mau.
-- Xu ly them/sua/xoa giao dich, luu/xoa ngan sach va tinh so du, tong thu/chi,
-  chi tieu theo ngan sach, thong ke theo thang/danh muc.
-- Tao va tong hop giao dich mau cho chuc nang mo phong dong bo.
-- Chua co HTTP client, API URL, co so du lieu local hay luu tru ben vung.
+- MoneyMateBackend la singleton ChangeNotifier tai giao dich tu API va cung cap
+  so du, tong thu/chi, chi tieu va thong ke cho cac man hinh.
+- Giao dich thu/chi thu cong va giao dich mo phong duoc luu ben vung tren SQL
+  Server qua REST API; ngan sach duoc quan ly truc tiep qua BudgetApiService.
+- Vi demo chi la du lieu mo phong, khong ket noi ngan hang/vi that.
+- ApiClient quan ly Firebase ID token, HTTP requests va loi API; ApiConfig cau
+  hinh dia chi backend cho tung nen tang.
 
 app_frontend/lib/screens/
 - Moi tep chua man hinh nghiep vu tuong ung; cac man hinh doc/cap nhat state
@@ -147,36 +149,41 @@ app_frontend/lib/screens/
   luong import chinh; man hinh form dang dung la transaction_form_screen.dart.
 
 
-5. BACKEND .NET VA CAC THANH PHAN API DU KIEN
----------------------------------------------
+5. BACKEND .NET VA CAC THANH PHAN API
+-------------------------------------
 Project:
-- app_backend/app_backend.sln la solution.
-- app_backend/app_backend/app_backend.csproj su dung Microsoft.NET.Sdk.Web va
-  target net8.0; project la ASP.NET Core MVC.
-- Program.cs hien dang AddControllersWithViews(), static files, routing,
-  authorization middleware va route MVC mac dinh den Home/Index.
-- HomeController.cs va Views/Home cung cap trang Index, Privacy, Error cua
-  project scaffold. Chua thay controller REST API cho nghiep vu tai chinh.
+- app_backend/app_backend.sln la solution; project
+  app_backend/app_backend.Api/app_backend.csproj su dung ASP.NET Core/.NET 8,
+  EF Core SQL Server va EF Core Design tooling.
+- Program.cs dang ky Firebase JWT authentication, authorization, DbContext,
+  CORS, cac service nghiep vu va REST/MVC routes.
+- Controllers/ cung cap API cho tai khoan, danh muc, giao dich, ngan sach,
+  thong ke, ho gia dinh, phe duyet va ho so nguoi dung.
 
-Mot so tep model/API van co trong source nhung chua duoc noi vao MVC app:
+Thanh phan nghiep vu va xac thuc:
 - Auth/FirebaseAuthenticationHandler.cs: ma xu ly Bearer token Firebase va
-  tao claim UID; Program.cs hien khong dang ky authentication scheme nay.
-- DTOs/CreateTransactionRequest.cs: payload du kien cho tao giao dich.
+  tao claim UID; API hien dang dang ky Firebase JWT Bearer authentication.
+- DTOs/CreateTransactionRequest.cs: payload tao/cap nhat giao dich.
 - services/HouseholdAuthorizationService.cs: logic kiem tra thanh vien/quyen
   ho gia dinh; TransactionService.cs co doan logic yeu cau duyet chi.
 - Models/: Account, User, Household, HouseholdMember va Transaction; cac enum
   dinh nghia trong Enum.cs.
-- Chua thay DbContext, migrations hoac controller de doc/ghi cac model.
-- Cac service/Auth tham chieu cac namespace va lop DB/model chua co day du trong
-  project hien tai; can hoan thien dependency va kiem tra build truoc khi xem
-  day la backend API san sang su dung.
-- appsettings*.json la file cau hinh; can kiem tra va cung cap gia tri rieng
-  cho moi moi truong, khong dua secret/credential vao tai lieu cong khai.
+- DbContext va EF Core migrations da duoc tao; controllers/doc ghi cac model
+  thong qua API.
+- Cac service va model da duoc ket noi vao project API va kiem tra build.
+- Connection string rieng theo may khong duoc luu trong appsettings; cung cap
+  config moi truong qua User Secrets hoac bien moi truong.
 
 
 6. MO HINH DU LIEU VA SQL
 -------------------------
-app_doc/SQLQuery1.sql tao database FINANCE_MANAGER va cac bang:
+app_doc/SQLQuery1.sql la script bootstrap schema cu. Schema hien tai duoc quan
+ly chinh bang EF Core migrations trong
+app_backend/app_backend.Api/Data/Migrations/. Database moi co the tao/cap nhat
+bang dotnet ef database update. Khong ap dung migration InitialCreate len
+database da chay script cu neu chua baseline migrations.
+
+Schema gom cac bang:
 - Users: nguoi dung, Firebase UID, email, ten hien thi, trang thai.
 - Households: nhom gia dinh, nguoi tao va nguong can duyet.
 - HouseholdMembers: vai tro Owner/Admin/Member, trang thai va quyen thanh vien;
@@ -199,41 +206,57 @@ Enum BudgetPeriod hien dang dong bo ve gia tri voi SQL: 0=Monthly, 1=Weekly,
 ------------------------------
 Flutter:
 - Dart SDK constraint: ^3.9.2 trong app_frontend/pubspec.yaml.
-- Dependencies: Flutter SDK, cupertino_icons, fl_chart; dev dependencies:
-  flutter_test va flutter_lints.
+- Dependencies: Flutter SDK, cupertino_icons, fl_chart, http, Firebase Core/Auth,
+  Google Sign-In; dev dependencies: flutter_test va flutter_lints.
 - Thuc hien lenh tu thu muc app_frontend:
     flutter pub get
     flutter run
     flutter analyze
     flutter test
-- Man hinh thong ke hien tai tu ve bieu do bang widget Flutter; fl_chart dang
-  khai bao trong dependencies nhung chua duoc import trong cac tep nghiep vu da
-  kiem tra.
+- Man hinh thong ke hien tai tu ve bieu do bang widget Flutter.
 
 Backend:
 - Mo app_backend/app_backend.sln bang Visual Studio hoac chay project
-  app_backend/app_backend/app_backend.csproj voi .NET 8 SDK.
+  app_backend/app_backend.Api/app_backend.csproj voi .NET 8 SDK.
 - Properties/launchSettings.json co cac profile HTTP/HTTPS phuc vu chay local.
-- Cau hinh DB/Firebase dang co trong appsettings; tuy nhien Program.cs hien
-  chua doc/dang ky DbContext hay Firebase service.
+- Cau hinh ConnectionStrings:MoneyMate va Firebase:ProjectId qua User Secrets
+  hoac bien moi truong; khong commit connection string rieng cua may.
+- EF Core CLI duoc pin trong .config/dotnet-tools.json; chay dotnet tool restore
+  truoc khi tao/ap dung migration.
 
 
-8. KHOANG TRONG VA VIEC CAN LAM TIEP
-------------------------------------
-- Ket noi frontend voi API: thong nhat DTO, xac thuc Firebase, REST endpoints,
-  repository/network layer va xu ly loi.
-- Hoan thien backend: dang ky xac thuc, DbContext/provider SQL Server,
-  entities con thieu, migrations, controller API va dependency packages; xu ly
-  sai khac namespace giua cac tep scaffold va tep API.
-- Them luu tru ben vung cho frontend hoac chuyen state sang API; hien tai dong
-  ung dung se mat giao dich, ngan sach va trang thai demo.
-- Test hien tai trong app_frontend/test/widget_test.dart van la test scaffold
-  "Counter increments", khong phan anh giao dien MoneyMate; nen thay bang widget
-  test cho cac man hinh/chuc nang hien tai.
-- Neu sua enum/schema, cap nhat dong thoi app_doc/SQLQuery1.sql va backend; cac
-  gia tri BudgetPeriod hien da khop nhau.
-- Kiem tra appsettings va loai bo thong tin ket noi/secret rieng truoc khi chia
-  se ma nguon.
+8. TINH TRANG CAC HANG MUC CAN LAM
+---------------------------------
+Da hoan thanh:
+- Ket noi Flutter voi REST API qua ApiClient va cac service theo nghiep vu;
+  Firebase ID token duoc gui den backend, loi HTTP duoc chuyen thanh ApiException.
+- Backend da dang ky Firebase JWT, EF Core SQL Server, entities/DbContext,
+  dependency packages va controller API. Cac quan he FK duoc khai bao ro rang,
+  khong tao shadow FK.
+- Giao dich thu cong tao/sua/xoa va ngan sach duoc luu tren SQL Server qua API.
+  Du lieu dong bo vi demo cung duoc luu ben vung va co tinh idempotent.
+- Man hinh Ngan hang & vi dien tu cho phep nhap ten nguon tuy y va tao tai
+  khoan mo phong kem nhieu giao dich thu/chi; moi dong giao dich co ma chong
+  tao trung khi gui lai sau loi mot phan.
+- Owner co the huy mem nhom; thanh vien duoc roi nhom, lich su tai chinh duoc
+  giu lai va nhan thong bao trong ung dung.
+- Test scaffold Counter da duoc thay bang widget smoke tests cho man hinh dang
+  nhap va trang tong quan.
+- BudgetPeriod trong Dart/C# va SQL dang dung cac gia tri 0=Monthly,
+  1=Weekly, 2=Yearly.
+- Connection string rieng theo may da duoc go bo khoi appsettings; su dung User
+  Secrets/bien moi truong thay the.
 
-Tai lieu mo ta trang thai ma nguon hien tai, khong khang dinh frontend va
-backend da tich hop hoac da duoc kiem thu end-to-end.
+Can luu y/kiem thu them:
+- Widget test hien la smoke test, chua bao phu day du cac luong form, API,
+  xac thuc va phan quyen.
+- Chua chay kiem thu end-to-end voi Firebase va SQL Server thuc trong moi truong
+  nay; can cau hinh User Secrets va database truoc khi danh gia runtime.
+- Migration InitialCreate danh cho database moi. Database da tao bang
+  app_doc/SQLQuery1.sql can duoc baseline migration rieng truoc khi chay
+  dotnet ef database update.
+- Migration AddHouseholdNotifications danh cho database moi. Database cu tao
+  bang SQLQuery1.sql can chay app_doc/SQLQuery2_HouseholdNotifications.sql de
+  them bang thong bao; khong chay InitialCreate truc tiep tren database nay.
+- Khi thay doi entity/enum/schema, tao migration moi va cap nhat tai lieu/schema
+  SQL legacy neu van con dung script do de bootstrap database.

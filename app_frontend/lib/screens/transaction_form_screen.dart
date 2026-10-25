@@ -23,6 +23,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   late TransactionType _type;
   late String _category;
   late DateTime _date;
+  bool _saving = false;
 
   final List<String> _categories = [
     'Ăn uống',
@@ -75,13 +76,11 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final transaction = MoneyTransaction(
-      id:
-          widget.transaction?.id ??
-          DateTime.now().microsecondsSinceEpoch.toString(),
+      id: widget.transaction?.id ?? '',
       title: _titleController.text.trim(),
       amount: double.parse(_amountController.text.trim()),
       type: _type,
@@ -90,13 +89,23 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       note: _noteController.text.trim(),
     );
 
-    if (_isEditing) {
-      _backend.updateTransaction(transaction);
-    } else {
-      _backend.addTransaction(transaction);
+    setState(() => _saving = true);
+    try {
+      if (_isEditing) {
+        await _backend.updateTransaction(transaction);
+      } else {
+        await _backend.addTransaction(transaction);
+      }
+      if (mounted) Navigator.pop(context);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không lưu được giao dịch: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-
-    Navigator.pop(context);
   }
 
   @override
@@ -205,9 +214,21 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               const SizedBox(height: 24),
 
               FilledButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.save),
-                label: Text(_isEditing ? 'Lưu thay đổi' : 'Thêm giao dịch'),
+                onPressed: _saving ? null : _save,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save),
+                label: Text(
+                  _saving
+                      ? 'Đang lưu...'
+                      : _isEditing
+                      ? 'Lưu thay đổi'
+                      : 'Thêm giao dịch',
+                ),
               ),
             ],
           ),

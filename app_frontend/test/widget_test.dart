@@ -8,23 +8,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:do_an_ltdd/main.dart';
+import 'package:do_an_ltdd/screens/home_screen.dart';
+import 'package:do_an_ltdd/screens/login_screen.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const FinanceManagerApp());
+  testWidgets('login screen renders without Firebase initialization', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Chào mừng trở lại'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Mật khẩu'), findsOneWidget);
+    expect(find.text('Đăng nhập'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('home screen renders its account and budget summaries', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Số dư MoneyMate đang quản lý'), findsOneWidget);
+    expect(find.text('Thông báo ngân sách'), findsOneWidget);
+    expect(find.text('Giao dịch gần đây'), findsOneWidget);
   });
 }

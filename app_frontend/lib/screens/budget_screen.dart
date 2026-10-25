@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/api_budget_model.dart';
 import '../services/api_client.dart';
+import '../services/app_backends.dart';
 import '../services/budget_api_service.dart';
 
 class BudgetsScreen extends StatefulWidget {
@@ -41,6 +42,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         _categories = results[1] as List<BudgetCategory>;
         _loading = false;
       });
+      MoneyMateBackend.instance.setBudgets(_budgets);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -55,7 +57,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       if (e.statusCode == 0)
         return 'Không kết nối được API. Hãy kiểm tra backend và địa chỉ trong api_config.dart.';
       if (e.statusCode == 404)
-        return 'Chưa tìm thấy endpoint. Hãy thêm CategoriesController.cs vào backend rồi chạy lại API.';
+        return 'Không tìm thấy endpoint API. Hãy kiểm tra phiên bản backend đang chạy.';
       return e.message;
     }
     return 'Không tải được dữ liệu: $e';
@@ -430,6 +432,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'budgets-add-fab',
         onPressed: _categories.isEmpty && !_loading
             ? () => _message(
                 'Không tải được danh mục. Hãy kiểm tra CategoriesController.',

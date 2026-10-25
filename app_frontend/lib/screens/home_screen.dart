@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../models/transaction_model.dart';
 import '../services/app_backends.dart';
-import '../models/budget_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -38,17 +37,24 @@ class HomeScreen extends StatelessWidget {
 
           final currentBudgets =
               backend.budgets
-                  .where((b) => b.month == now.month && b.year == now.year)
+                  .where(
+                    (budget) =>
+                        !budget.startDate.isAfter(now) &&
+                        (budget.endDate == null ||
+                            !budget.endDate!.isBefore(
+                              DateTime(now.year, now.month, now.day),
+                            )),
+                  )
                   .toList()
                 ..sort((a, b) => a.priority.compareTo(b.priority));
 
           final specialBudgets = currentBudgets
               .where((budget) {
-                if (budget.mode == BudgetMode.planned) {
-                  return !backend.plannedBudgetAffordable(budget);
+                if (budget.mode == 0) {
+                  return backend.balance < budget.limitAmount;
                 }
 
-                return backend.spentInBudget(budget) >= budget.limit * 0.8;
+                return budget.progress >= 0.8;
               })
               .take(5)
               .toList();
@@ -123,40 +129,35 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 )
-              else if (specialBudgets.isEmpty)
-                const Card(
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.check_circle_outline,
-                      color: Colors.green,
-                    ),
-                    title: Text('Chưa có cảnh báo đặc biệt'),
-                    subtitle: Text(
-                      'Các ngân sách ưu tiên đang trong giới hạn.',
-                    ),
-                  ),
-                )
               else
                 ...specialBudgets.map((budget) {
-                  final isPlanned = budget.mode == BudgetMode.planned;
+                  final isPlanned = budget.mode == 0;
 
-                  final spent = backend.spentInBudget(budget);
+                  final spent = budget.spentAmount;
 
                   // Dự định: tiến trình thể hiện mức tiền hiện có
                   // so với khoản tiền cần để thực hiện.
                   // Đang thực hiện: thể hiện tỷ lệ đã chi.
                   final progress = isPlanned
-                      ? (backend.balance / budget.limit)
+                      ? (backend.balance / budget.limitAmount)
                             .clamp(0.0, 1.0)
                             .toDouble()
-                      : backend.budgetProgress(budget);
+                      : budget.progress;
 
-                  final status = backend.budgetStatus(budget);
+                  final status = isPlanned
+                      ? backend.balance >= budget.limitAmount
+                            ? 'Đủ tiền để thực hiện dự định'
+                            : 'Chưa đủ ${money(budget.limitAmount - backend.balance)}'
+                      : spent > budget.limitAmount
+                      ? 'Đã vượt ngân sách ${money(spent - budget.limitAmount)}'
+                      : budget.progress >= 0.8
+                      ? 'Sắp hết ngân sách: ${(budget.progress * 100).round()}%'
+                      : 'Đang sử dụng bình thường';
 
-                  final isOverBudget = !isPlanned && spent > budget.limit;
+                  final isOverBudget = !isPlanned && spent > budget.limitAmount;
 
                   final isInsufficient =
-                      isPlanned && !backend.plannedBudgetAffordable(budget);
+                      isPlanned && backend.balance < budget.limitAmount;
 
                   final color = isInsufficient || isOverBudget
                       ? Colors.red
@@ -164,9 +165,9 @@ class HomeScreen extends StatelessWidget {
 
                   final amountDescription = isPlanned
                       ? 'Số dư hiện có: ${money(backend.balance)} / '
-                            '${money(budget.limit)} cần thiết'
+                            '${money(budget.limitAmount)} cần thiết'
                       : 'Đã chi ${money(spent)} / '
-                            '${money(budget.limit)}';
+                            '${money(budget.limitAmount)}';
 
                   return Card(
                     child: Padding(
@@ -185,7 +186,7 @@ class HomeScreen extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  budget.category,
+                                  budget.name,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -217,16 +218,14 @@ class HomeScreen extends StatelessWidget {
                                 ? 'Khả năng đáp ứng: '
                                       '${(progress * 100).round()}%'
                                 : 'Đã sử dụng: '
-                                      '${(spent / budget.limit * 100).round()}%',
+                                      '${(budget.progress * 100).round()}%',
                             style: TextStyle(
                               color: color,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          if (status != null) ...[
-                            const SizedBox(height: 6),
-                            Text(status, style: TextStyle(color: color)),
-                          ],
+                          const SizedBox(height: 6),
+                          Text(status, style: TextStyle(color: color)),
                         ],
                       ),
                     ),

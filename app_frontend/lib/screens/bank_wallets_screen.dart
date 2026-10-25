@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/bank_wallet.dart';
 import '../services/app_backends.dart';
+import 'demo_transaction_bundle_screen.dart';
 import '../screens/linked_flow_screen.dart';
 
 class BankWalletsScreen extends StatelessWidget {
@@ -62,6 +63,26 @@ class BankWalletsScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    final created = await Navigator.push<int>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DemoTransactionBundleScreen(),
+                      ),
+                    );
+                    if (!context.mounted || created == null) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Đã lưu $created giao dịch mẫu.')),
+                    );
+                  },
+                  icon: const Icon(Icons.add_card),
+                  label: const Text('Tạo giao dịch mẫu'),
+                ),
+              ),
+              const SizedBox(height: 8),
               ...backend.wallets.map((wallet) {
                 final synced = _isSynced(backend, wallet.id);
                 final syncing = backend.isWalletSyncing(wallet.id);
@@ -109,35 +130,53 @@ class BankWalletsScreen extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: synced || syncing
+                            onPressed: syncing || synced
                                 ? null
                                 : () async {
                                     try {
-                                      final ok = await backend.simulateSync(wallet.id);
+                                      final ok = await backend.simulateSync(
+                                        wallet.id,
+                                      );
                                       if (!context.mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(
-                                          content: Text(ok
-                                              ? 'Đã lưu giao dịch mô phỏng của ${wallet.name} vào SQL Server.'
-                                              : 'Các giao dịch mô phỏng của tài khoản này đã tồn tại.'),
+                                          content: Text(
+                                            ok
+                                                ? 'Đã tạo tài khoản và giao dịch mẫu cho ${wallet.name}.'
+                                                : 'Tài khoản này đã có các giao dịch mẫu.',
+                                          ),
                                         ),
                                       );
                                     } catch (e) {
                                       if (!context.mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Không thể lưu giao dịch mô phỏng: $e')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Không thể lưu giao dịch mô phỏng: $e',
+                                          ),
+                                        ),
                                       );
                                     }
                                   },
                             icon: syncing
-                                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
                                 : Icon(synced ? Icons.check : Icons.sync),
                             label: Text(
                               syncing
                                   ? 'Đang ghi giao dịch...'
                                   : synced
-                                      ? 'Đã mô phỏng đồng bộ'
-                                      : 'Mô phỏng đồng bộ giao dịch',
+                                  ? 'Đã tạo tài khoản & giao dịch mẫu'
+                                  : 'Tạo tài khoản & giao dịch mẫu',
                             ),
                           ),
                         ),
@@ -146,6 +185,29 @@ class BankWalletsScreen extends StatelessWidget {
                   ),
                 );
               }),
+              ...backend.transactions
+                  .where(
+                    (transaction) =>
+                        transaction.source != 'Thủ công' &&
+                        transaction.demoWalletId == null,
+                  )
+                  .map((transaction) => transaction.source)
+                  .toSet()
+                  .map(
+                    (accountName) => Card(
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.account_balance_wallet_outlined),
+                        ),
+                        title: Text(accountName),
+                        subtitle: const Text('Tài khoản mẫu'),
+                        trailing: const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ),
+                  ),
               const SizedBox(height: 20),
               Text(
                 'Giao dịch từ tài khoản mô phỏng',

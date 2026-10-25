@@ -4,6 +4,7 @@ using app_backend.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using System.ComponentModel.DataAnnotations;
 
 namespace app_backend.Api.Controllers;
@@ -14,11 +15,50 @@ public sealed class HouseholdsController(FinanceManagerDbContext db, CurrentUser
 {
     public sealed record CreateHouseholdRequest([Required, MaxLength(150)] string Name, decimal ApprovalThreshold = 1000000m);
     public sealed record AddMemberRequest([Required, EmailAddress] string Email, MemberRole Role = MemberRole.Member, bool CanViewIncomeDetails = false, bool CanApproveExpenses = false);
+
+    [HttpGet("notifications")]
+    public async Task<IActionResult> Notifications(CancellationToken ct)
+    {
+        var user = await currentUserService.GetUserAsync(User, ct); if (user is null) return Unauthorized();
+        try
+        {
+            var notifications = await db.HouseholdNotifications.AsNoTracking()
+                .Where(n => n.RecipientUserId == user.Id)
+                .OrderByDescending(n => n.CreatedAt)
+                .Select(n => new { n.Id, n.HouseholdId, n.Title, n.Message, n.CreatedAt, n.ReadAt })
+                .ToListAsync(ct);
+            return Ok(notifications);
+        }
+        catch (SqlException ex) when (ex.Number == 208)
+        {
+            return NotificationSchemaMissing();
+        }
+    }
+
+    [HttpPost("notifications/{notificationId:guid}/read")]
+    public async Task<IActionResult> MarkNotificationRead(Guid notificationId, CancellationToken ct)
+    {
+        var user = await currentUserService.GetUserAsync(User, ct); if (user is null) return Unauthorized();
+        try
+        {
+            var notification = await db.HouseholdNotifications
+                .SingleOrDefaultAsync(n => n.Id == notificationId && n.RecipientUserId == user.Id, ct);
+            if (notification is null) return NotFound();
+            notification.ReadAt ??= DateTime.UtcNow;
+            await db.SaveChangesAsync(ct);
+            return NoContent();
+        }
+        catch (SqlException ex) when (ex.Number == 208)
+        {
+            return NotificationSchemaMissing();
+        }
+    }
+
     [HttpGet("mine")]
     public async Task<IActionResult> Mine(CancellationToken ct)
     {
         var user = await currentUserService.GetUserAsync(User, ct); if (user is null) return Unauthorized();
-        var result = await db.HouseholdMembers.AsNoTracking().Where(m => m.UserId == user.Id && m.Status == MemberStatus.Active).Select(m => new { m.HouseholdId, m.Role, m.CanViewIncomeDetails, m.CanApproveExpenses, HouseholdName = m.Household!.Name, m.Household!.ApprovalThreshold }).FirstOrDefaultAsync(ct);
+        var result = await db.HouseholdMembers.AsNoTracking().Where(m => m.UserId == user.Id && m.Status == MemberStatus.Active && m.Household!.IsActive).Select(m => new { m.HouseholdId, m.Role, m.CanViewIncomeDetails, m.CanApproveExpenses, HouseholdName = m.Household!.Name, m.Household!.ApprovalThreshold }).FirstOrDefaultAsync(ct);
         return Ok(result);
     }
     [HttpPost]
@@ -62,4 +102,50 @@ public sealed class HouseholdsController(FinanceManagerDbContext db, CurrentUser
         if (member is null) return NotFound(); if (member.Role == MemberRole.Owner) return Conflict(new { error = "cannot_remove_owner" });
         member.Status = MemberStatus.Left; await db.SaveChangesAsync(ct); return NoContent();
     }
+
+    [HttpPost("{id:guid}/cancel")]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
+    {
+        var user = await currentUserService.GetUserAsync(User, ct); if (user is null) return Unauthorized();
+        var ownerMembership = await householdAuth.GetActiveMembershipAsync(id, user.Id, ct);
+        if (ownerMembership is null || ownerMembership.Role != MemberRole.Owner) return Forbid();
+
+        var household = await db.Households.SingleOrDefaultAsync(h => h.Id == id && h.IsActive, ct);
+        if (household is null) return NotFound();
+
+        var activeMembers = await db.HouseholdMembers
+            .Where(m => m.HouseholdId == id && m.Status == MemberStatus.Active)
+            .ToListAsync(ct);
+        var cancelledAt = DateTime.UtcNow;
+        foreach (var member in activeMembers)
+        {
+            member.Status = MemberStatus.Left;
+            if (member.UserId == user.Id) continue;
+            db.HouseholdNotifications.Add(new HouseholdNotification
+            {
+                HouseholdId = id,
+                RecipientUserId = member.UserId,
+                Title = "Nhóm gia đình đã được hủy",
+                Message = $"Chủ nhóm đã hủy nhóm \"{household.Name}\". Lịch sử giao dịch và ngân sách được giữ lại.",
+                CreatedAt = cancelledAt
+            });
+        }
+
+        household.IsActive = false;
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (SqlException ex) when (ex.Number == 208)
+        {
+            return NotificationSchemaMissing();
+        }
+        return NoContent();
+    }
+
+    private ObjectResult NotificationSchemaMissing() =>
+        StatusCode(StatusCodes.Status503ServiceUnavailable, new
+        {
+            error = "household_notifications_schema_missing"
+        });
 }

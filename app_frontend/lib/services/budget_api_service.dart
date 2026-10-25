@@ -17,7 +17,7 @@ class BudgetApiService {
   }
 
   Future<List<BudgetCategory>> getExpenseCategories() async {
-    final data = await _api.get('/api/categories');
+    final data = await _api.get('/api/categories?type=0');
     if (data is! List)
       throw ApiException(500, 'API danh mục trả về dữ liệu không hợp lệ.');
     return data

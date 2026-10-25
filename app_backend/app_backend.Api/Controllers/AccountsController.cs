@@ -27,7 +27,7 @@ public sealed class AccountsController(FinanceManagerDbContext db, CurrentUserSe
         var user = await currentUserService.GetUserAsync(User, ct); if (user is null) return Unauthorized();
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Trim().Length > 100 || request.OpeningBalance < 0 || !Enum.IsDefined(request.Type)) return BadRequest(new { error = "invalid_account" });
         if (request.HouseholdId.HasValue && await householdAuth.GetActiveMembershipAsync(request.HouseholdId.Value, user.Id, ct) is null) return Forbid();
-        var account = new Account { OwnerUserId = user.Id, HouseholdId = request.HouseholdId, Name = request.Name.Trim(), Type = request.Type, OpeningBalance = request.OpeningBalance, IsDemo = true };
+        var account = new Account { OwnerUserId = user.Id, HouseholdId = request.HouseholdId, Name = request.Name.Trim(), Type = request.Type, OpeningBalance = request.OpeningBalance, IsDemo = request.IsDemo };
         db.Accounts.Add(account); await db.SaveChangesAsync(ct);
         return Created($"/api/accounts/{account.Id}", new { account.Id, account.Name, account.Type, account.OpeningBalance, account.IsDemo, account.HouseholdId, account.CreatedAt });
     }

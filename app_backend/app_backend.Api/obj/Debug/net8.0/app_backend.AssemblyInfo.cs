@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("do-an-ltdd-moneymate-local")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("app_backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dde81a193ae18f27dd87ae57347a5625feb342f6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c91da850fc786259534e247e86bc6db153d4fa81")]
 [assembly: System.Reflection.AssemblyProductAttribute("app_backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("app_backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

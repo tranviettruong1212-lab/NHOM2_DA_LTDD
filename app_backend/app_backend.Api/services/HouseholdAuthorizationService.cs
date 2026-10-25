@@ -7,7 +7,12 @@ namespace app_backend.Api.Services;
 public sealed class HouseholdAuthorizationService(FinanceManagerDbContext db)
 {
     public Task<HouseholdMember?> GetActiveMembershipAsync(Guid householdId, Guid userId, CancellationToken ct = default) =>
-        db.HouseholdMembers.SingleOrDefaultAsync(m => m.HouseholdId == householdId && m.UserId == userId && m.Status == MemberStatus.Active, ct);
+        db.HouseholdMembers.SingleOrDefaultAsync(m =>
+            m.HouseholdId == householdId
+            && m.UserId == userId
+            && m.Status == MemberStatus.Active
+            && m.Household != null
+            && m.Household.IsActive, ct);
 
     public async Task<bool> CanApproveExpensesAsync(Guid householdId, Guid userId, CancellationToken ct = default)
     {

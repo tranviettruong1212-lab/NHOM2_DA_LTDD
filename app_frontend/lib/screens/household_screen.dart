@@ -18,6 +18,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   String? _error;
   Map<String, dynamic>? _household;
   List<Map<String, dynamic>> _members = [];
+  List<Map<String, dynamic>> _notifications = [];
 
   dynamic _value(Map<String, dynamic> data, String camel, String pascal) =>
       data[camel] ?? data[pascal];
@@ -38,6 +39,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
 
     Map<String, dynamic>? household;
     List<Map<String, dynamic>> members = [];
+    List<Map<String, dynamic>> notifications = [];
     String? error;
 
     try {
@@ -63,11 +65,26 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
       error = _friendlyError(e);
     }
 
+    try {
+      final notificationResult = await _api.get(
+        '/api/households/notifications',
+      );
+      if (notificationResult is List) {
+        notifications = notificationResult
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+      }
+    } catch (e) {
+      error ??= _friendlyError(e);
+    }
+
     if (!mounted) return;
 
     setState(() {
       _household = household;
       _members = members;
+      _notifications = notifications;
       _error = error;
       _loading = false;
     });
@@ -153,6 +170,57 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     });
   }
 
+  Future<void> _cancelHousehold() async {
+    final household = _household;
+    if (household == null) return;
+    final householdId = _value(
+      household,
+      'householdId',
+      'HouseholdId',
+    ).toString();
+    final name =
+        (_value(household, 'householdName', 'HouseholdName') ?? 'nhóm gia đình')
+            .toString();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hủy nhóm gia đình?'),
+        content: Text(
+          'Nhóm "$name" sẽ ngừng hoạt động và tất cả thành viên sẽ được rời nhóm. '
+          'Lịch sử giao dịch và ngân sách sẽ được giữ lại; các thành viên sẽ nhận thông báo trong ứng dụng.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Quay lại'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Hủy nhóm'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _runBusy(() async {
+      await _api.post('/api/households/$householdId/cancel', {});
+      await _load();
+      _message(
+        'Đã hủy nhóm. Lịch sử được giữ lại và thành viên đã được thông báo.',
+      );
+    });
+  }
+
+  Future<void> _markNotificationRead(String notificationId) async {
+    await _runBusy(() async {
+      await _api.post('/api/households/notifications/$notificationId/read', {});
+      await _load();
+    });
+  }
+
   Future<void> _runBusy(Future<void> Function() action) async {
     setState(() => _busy = true);
     try {
@@ -175,6 +243,8 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
           return 'Bạn đã thuộc một nhóm gia đình.';
         case 'cannot_remove_owner':
           return 'Không thể xóa chủ nhóm.';
+        case 'household_notifications_schema_missing':
+          return 'Database chưa có bảng thông báo nhóm. Hãy chạy script app_doc/SQLQuery2_HouseholdNotifications.sql trên database MoneyMate rồi tải lại.';
         default:
           return 'API ${error.statusCode}: ${error.message}';
       }
@@ -183,8 +253,9 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   }
 
   void _message(String text) {
-    if (mounted)
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    }
   }
 
   String _roleName(dynamic role) => switch (role is num
@@ -236,6 +307,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
       ),
       floatingActionButton: household != null && canManage
           ? FloatingActionButton.extended(
+              heroTag: 'household-add-member-fab',
               onPressed: _busy ? null : _addMember,
               icon: const Icon(Icons.person_add_alt_1),
               label: const Text('Thêm thành viên'),
@@ -263,6 +335,48 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                         ),
                       ),
                     ),
+                  if (_notifications.isNotEmpty) ...[
+                    Text(
+                      'Thông báo',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    ..._notifications.map((notification) {
+                      final readAt = _value(notification, 'readAt', 'ReadAt');
+                      final id = _value(notification, 'id', 'Id').toString();
+                      return Card(
+                        child: ListTile(
+                          leading: Icon(
+                            readAt == null
+                                ? Icons.notifications_active_outlined
+                                : Icons.notifications_none,
+                            color: readAt == null
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                          ),
+                          title: Text(
+                            (_value(notification, 'title', 'Title') ??
+                                    'Thông báo')
+                                .toString(),
+                          ),
+                          subtitle: Text(
+                            (_value(notification, 'message', 'Message') ?? '')
+                                .toString(),
+                          ),
+                          trailing: readAt == null
+                              ? IconButton(
+                                  tooltip: 'Đánh dấu đã đọc',
+                                  onPressed: _busy
+                                      ? null
+                                      : () => _markNotificationRead(id),
+                                  icon: const Icon(Icons.done),
+                                )
+                              : null,
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 12),
+                  ],
                   if (household == null) ...[
                     Card(
                       child: Padding(
@@ -325,6 +439,17 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                         ),
                       ),
                     ),
+                    if (role == 0) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _busy ? null : _cancelHousehold,
+                        icon: const Icon(Icons.group_remove_outlined),
+                        label: const Text('Hủy nhóm gia đình'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Text(
                       'Thành viên (${_members.length})',
