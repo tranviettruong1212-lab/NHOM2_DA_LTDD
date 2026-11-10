@@ -77,3 +77,12 @@ public enum CategoryType : byte
     Expense = 0,
     Income = 1
 }
+
+public enum RecurrenceFrequency : byte
+{
+    Daily = 0,
+    Weekly = 1,
+    Monthly = 2,
+    Yearly = 3
+}
+

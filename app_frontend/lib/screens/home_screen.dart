@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/currency_format.dart';
 import '../models/transaction_model.dart';
 import '../services/app_backends.dart';
+import 'recurring_transactions_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -100,6 +101,30 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
+              if (backend.dueRecurringCount > 0) ...[
+                const SizedBox(height: 16),
+                Card(
+                  color: const Color(0xFFFEF3C7),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: Color(0xFFFCD34D)),
+                  ),
+                  child: ListTile(
+                    leading: const Icon(Icons.event_repeat, color: Color(0xFFD97706)),
+                    title: Text(
+                      'Có ${backend.dueRecurringCount} khoản định kỳ đến hạn',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+                    ),
+                    subtitle: const Text('Nhấn để kiểm tra và xác nhận ghi nhận vào sổ giao dịch.'),
+                    trailing: const Icon(Icons.chevron_right, color: Color(0xFFD97706)),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RecurringTransactionsScreen()),
+                    ),
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 20),
 

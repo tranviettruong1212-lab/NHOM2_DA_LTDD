@@ -33,6 +33,7 @@ Trang thai hien tai:
 |-- app_doc/
 |   |-- SQLQuery1.sql
 |   |-- SQLQuery2_HouseholdNotifications.sql
+|   |-- SQLQuery3_AddRecurringTransactions.sql
 |   `-- THONG_TIN_UNG_DUNG.txt
 |-- app_backend/
 |   |-- app_backend.sln
@@ -158,6 +159,8 @@ Controller va route chinh:
   nhom.
 - ApprovalRequestsController: /api/approval-requests - xem yeu cau va phe
   duyet/tu choi.
+- RecurringTransactionsController: /api/recurring-transactions - CRUD giao dich dinh ky,
+  xu ly tu dong / xac nhan ghi nhan cac khoan chi/thu den han (tien nha, internet, luong...).
 
 Cac API nghiep vu duoc bao ve bang [Authorize] va can Firebase ID token hop le.
 CurrentUserService dong bo/tra cuu nguoi dung; HouseholdAuthorizationService
@@ -174,6 +177,7 @@ Migrations: app_backend/app_backend.Api/Data/Migrations/
 Migration hien co:
 - 20261025064640_InitialCreate: schema ban dau.
 - 20261025144100_AddHouseholdNotifications: bo sung thong bao ho gia dinh.
+- 20261110153500_AddRecurringTransactions: bo sung bang giao dich dinh ky.
 
 Database moi duoc tao/cap nhat bang EF Core:
     dotnet tool restore

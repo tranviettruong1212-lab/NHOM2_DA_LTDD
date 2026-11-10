@@ -4,6 +4,7 @@ import '../models/transaction_model.dart';
 import '../models/api_budget_model.dart';
 import '../models/bank_wallet.dart';
 import 'budget_api_service.dart';
+import 'recurring_api_service.dart';
 import 'transaction_api_service.dart';
 
 class MoneyMateBackend extends ChangeNotifier {
@@ -13,6 +14,8 @@ class MoneyMateBackend extends ChangeNotifier {
 
   final List<MoneyTransaction> _transactions = [];
   final List<ApiBudget> _budgets = [];
+  int _dueRecurringCount = 0;
+  int get dueRecurringCount => _dueRecurringCount;
 
   // Tài khoản mẫu, không kết nối dịch vụ thật.
   final List<BankWallet> _wallets = const [
@@ -69,6 +72,10 @@ class MoneyMateBackend extends ChangeNotifier {
 
   /// Tải lịch sử giao dịch đã lưu trong SQL Server.
   Future<void> loadFromApi() async {
+    try {
+      await RecurringApiService.instance.processDue();
+    } catch (_) {}
+
     final remote = await _transactionApi.getTransactions();
     final budgets = await _budgetApi.getBudgets();
     _transactions
@@ -78,6 +85,14 @@ class MoneyMateBackend extends ChangeNotifier {
       ..clear()
       ..addAll(budgets);
     _transactions.sort((a, b) => b.date.compareTo(a.date));
+
+    try {
+      final recurring = await RecurringApiService.instance.getRecurringTransactions(activeOnly: true);
+      _dueRecurringCount = recurring.where((i) => i.isDue).length;
+    } catch (_) {
+      _dueRecurringCount = 0;
+    }
+
     notifyListeners();
   }
 

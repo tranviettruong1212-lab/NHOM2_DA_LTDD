@@ -1,7 +1,18 @@
 using app_backend.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 
 namespace app_backend.Api.Data;
+
+public sealed class FinanceManagerDbContextFactory : IDesignTimeDbContextFactory<FinanceManagerDbContext>
+{
+    public FinanceManagerDbContext CreateDbContext(string[] args)
+    {
+        var optionsBuilder = new DbContextOptionsBuilder<FinanceManagerDbContext>();
+        optionsBuilder.UseSqlServer("Server=localhost;Database=FINANCE_MANAGER;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true");
+        return new FinanceManagerDbContext(optionsBuilder.Options);
+    }
+}
 
 public sealed class FinanceManagerDbContext(DbContextOptions<FinanceManagerDbContext> options)
     : DbContext(options)
@@ -16,6 +27,7 @@ public sealed class FinanceManagerDbContext(DbContextOptions<FinanceManagerDbCon
     public DbSet<ApprovalRequest> ApprovalRequests => Set<ApprovalRequest>();
     public DbSet<Budget> Budgets => Set<Budget>();
     public DbSet<HouseholdNotification> HouseholdNotifications => Set<HouseholdNotification>();
+    public DbSet<RecurringTransaction> RecurringTransactions => Set<RecurringTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -165,6 +177,52 @@ public sealed class FinanceManagerDbContext(DbContextOptions<FinanceManagerDbCon
             e.HasOne(x => x.CreatedByUser)
                 .WithMany()
                 .HasForeignKey(x => x.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Category)
+                .WithMany()
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<RecurringTransaction>(e =>
+        {
+            e.ToTable("RecurringTransactions", t =>
+            {
+                t.HasCheckConstraint("CK_RecurringTransactions_Amount", "[Amount] > 0");
+                t.HasCheckConstraint("CK_RecurringTransactions_Type", "[Type] IN (0,1)");
+                t.HasCheckConstraint("CK_RecurringTransactions_Frequency", "[Frequency] IN (0,1,2,3)");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+            e.Property(x => x.Title).HasMaxLength(150).IsRequired();
+            e.Property(x => x.Amount).HasPrecision(18, 2);
+            e.Property(x => x.Type).HasConversion<byte>();
+            e.Property(x => x.Frequency).HasConversion<byte>();
+            e.Property(x => x.StartDate).HasColumnType("date");
+            e.Property(x => x.EndDate).HasColumnType("date");
+            e.Property(x => x.NextDueDate).HasColumnType("date");
+            e.Property(x => x.LastGeneratedDate).HasColumnType("date");
+            e.Property(x => x.AutoCreate).HasDefaultValue(true);
+            e.Property(x => x.IsActive).HasDefaultValue(true);
+            e.Property(x => x.Note).HasMaxLength(1000);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            e.HasIndex(x => new { x.CreatedByUserId, x.IsActive, x.NextDueDate });
+            e.HasIndex(x => new { x.HouseholdId, x.IsActive, x.NextDueDate });
+
+            e.HasOne(x => x.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Household)
+                .WithMany()
+                .HasForeignKey(x => x.HouseholdId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             e.HasOne(x => x.Category)

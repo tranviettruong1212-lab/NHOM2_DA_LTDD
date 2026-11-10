@@ -14,6 +14,8 @@ tài chính thật.
   theo phương án này.
 - `app_doc/SQLQuery2_HouseholdNotifications.sql`: bổ sung bảng thông báo cho
   database cũ.
+- `app_doc/SQLQuery3_AddRecurringTransactions.sql`: bổ sung bảng giao dịch định kỳ
+  cho database cũ.
 
 ## Yêu cầu môi trường
 
@@ -34,7 +36,8 @@ tài chính thật.
    migration `InitialCreate` trực tiếp lên database đó. Cần baseline migration
    phù hợp trước khi cập nhật schema. Để bổ sung bảng thông báo cho database
    cũ, chạy `app_doc\SQLQuery2_HouseholdNotifications.sql` một lần trên database
-   đó.
+   đó. Để bổ sung bảng giao dịch định kỳ cho database cũ, chạy
+   `app_doc\SQLQuery3_AddRecurringTransactions.sql`.
 
 ## 2. Cài đặt backend
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/currency_format.dart';
 import '../models/transaction_model.dart';
 import '../services/app_backends.dart';
+import 'recurring_transactions_screen.dart';
 import 'transaction_form_screen.dart';
 
 class TransactionsScreen extends StatelessWidget {
@@ -67,7 +68,19 @@ class TransactionsScreen extends StatelessWidget {
     final backend = MoneyMateBackend.instance;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Giao dịch')),
+      appBar: AppBar(
+        title: const Text('Giao dịch'),
+        actions: [
+          IconButton(
+            tooltip: 'Giao dịch định kỳ',
+            icon: const Icon(Icons.event_repeat),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RecurringTransactionsScreen()),
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'transactions-add-fab',
         onPressed: () => _openForm(context, null),

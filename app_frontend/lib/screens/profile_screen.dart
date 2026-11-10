@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../services/api_client.dart';
 import 'household_screen.dart';
+import 'recurring_transactions_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -167,6 +168,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       subtitle: const Text('Tạo nhóm, xem thành viên và thêm người đã đăng ký'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HouseholdScreen())),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.event_repeat_outlined)),
+                      title: const Text('Giao dịch định kỳ'),
+                      subtitle: const Text('Quản lý hóa đơn, tiền nhà, lương, dịch vụ tự động'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecurringTransactionsScreen())),
                     ),
                   ),
                   const SizedBox(height: 12),

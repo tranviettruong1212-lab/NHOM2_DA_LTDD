@@ -361,6 +361,94 @@ namespace app_backend.Api.Data.Migrations
                     b.ToTable("HouseholdNotifications", (string)null);
                 });
 
+            modelBuilder.Entity("app_backend.Api.Models.RecurringTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("AutoCreate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<byte>("Frequency")
+                        .HasColumnType("tinyint");
+
+                    b.Property<Guid?>("HouseholdId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime?>("LastGeneratedDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("NextDueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<byte>("Type")
+                        .HasColumnType("tinyint");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("CreatedByUserId", "IsActive", "NextDueDate");
+
+                    b.HasIndex("HouseholdId", "IsActive", "NextDueDate");
+
+                    b.ToTable("RecurringTransactions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RecurringTransactions_Amount", "[Amount] > 0");
+
+                            t.HasCheckConstraint("CK_RecurringTransactions_Frequency", "[Frequency] IN (0,1,2,3)");
+
+                            t.HasCheckConstraint("CK_RecurringTransactions_Type", "[Type] IN (0,1)");
+                        });
+                });
+
             modelBuilder.Entity("app_backend.Api.Models.Transaction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -640,6 +728,39 @@ namespace app_backend.Api.Data.Migrations
                     b.Navigation("Household");
 
                     b.Navigation("RecipientUser");
+                });
+
+            modelBuilder.Entity("app_backend.Api.Models.RecurringTransaction", b =>
+                {
+                    b.HasOne("app_backend.Api.Models.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("app_backend.Api.Models.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("app_backend.Api.Models.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("app_backend.Api.Models.Household", "Household")
+                        .WithMany()
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Category");
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("Household");
                 });
 
             modelBuilder.Entity("app_backend.Api.Models.Transaction", b =>
