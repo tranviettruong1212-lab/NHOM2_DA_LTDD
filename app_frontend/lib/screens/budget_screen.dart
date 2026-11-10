@@ -24,7 +24,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   @override
   void initState() {
     super.initState();
+    MoneyMateBackend.instance.addListener(_syncBudgetsFromBackend);
     _load();
+  }
+
+  @override
+  void dispose() {
+    MoneyMateBackend.instance.removeListener(_syncBudgetsFromBackend);
+    super.dispose();
+  }
+
+  void _syncBudgetsFromBackend() {
+    if (!mounted) return;
+    final budgets = MoneyMateBackend.instance.budgets;
+    setState(() => _budgets = budgets);
   }
 
   Future<void> _load() async {
@@ -507,7 +520,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                   if (_budgets.isEmpty)
                     _emptyState()
                   else
-                    ...(_budgets
+                    ...(_budgets.toList()
                           ..sort((a, b) => b.priority.compareTo(a.priority)))
                         .map(_budgetCard),
                   const SizedBox(height: 12),
