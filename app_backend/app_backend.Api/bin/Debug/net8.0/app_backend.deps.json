@@ -10,7 +10,7 @@
         "dependencies": {
           "FirebaseAdmin": "3.7.0",
           "Google.Apis.Auth": "1.77.0",
-          "Microsoft.AspNetCore.Authentication.JwtBearer": "8.0.32",
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "8.0.33",
           "Microsoft.EntityFrameworkCore.Design": "8.0.0",
           "Microsoft.EntityFrameworkCore.SqlServer": "8.0.0",
           "Swashbuckle.AspNetCore": "10.3.0"
@@ -135,14 +135,14 @@
           }
         }
       },
-      "Microsoft.AspNetCore.Authentication.JwtBearer/8.0.32": {
+      "Microsoft.AspNetCore.Authentication.JwtBearer/8.0.33": {
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "7.7.3"
         },
         "runtime": {
           "lib/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll": {
-            "assemblyVersion": "8.0.32.0",
-            "fileVersion": "8.0.3226.50505"
+            "assemblyVersion": "8.0.33.0",
+            "fileVersion": "8.0.3326.52312"
           }
         }
       },
@@ -1047,12 +1047,12 @@
       "path": "humanizer.core/2.14.1",
       "hashPath": "humanizer.core.2.14.1.nupkg.sha512"
     },
-    "Microsoft.AspNetCore.Authentication.JwtBearer/8.0.32": {
+    "Microsoft.AspNetCore.Authentication.JwtBearer/8.0.33": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-BrL4xE4byyDVL9+gfhK48aK2MwsFSDV5/OwLn2jc6lkb5aYiAAO69ueK23Q9+G+qQm8HNagzt6o+3MHremFSFg==",
-      "path": "microsoft.aspnetcore.authentication.jwtbearer/8.0.32",
-      "hashPath": "microsoft.aspnetcore.authentication.jwtbearer.8.0.32.nupkg.sha512"
+      "sha512": "sha512-Hwq3HqpQD3Y3wLI0TX8o+KYDxbyYR7w5pUKx+Va2MtfgQ9rwh3RzH/dtiwPkmUPfTaT7a5771pmL9X1kqfWD5g==",
+      "path": "microsoft.aspnetcore.authentication.jwtbearer/8.0.33",
+      "hashPath": "microsoft.aspnetcore.authentication.jwtbearer.8.0.33.nupkg.sha512"
     },
     "Microsoft.Bcl.AsyncInterfaces/6.0.0": {
       "type": "package",

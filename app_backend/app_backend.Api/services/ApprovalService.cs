@@ -10,6 +10,8 @@ public sealed class ApprovalService(FinanceManagerDbContext db, HouseholdAuthori
     {
         return await db.ApprovalRequests.AsNoTracking()
             .Include(a => a.Transaction)
+                .ThenInclude(t => t!.Category)
+            .Include(a => a.RequestedByUser)
             .Where(a => a.Status == ApprovalStatus.Pending && a.Transaction != null && !a.Transaction.IsDeleted && a.Transaction.HouseholdId != null &&
                 db.HouseholdMembers.Any(m => m.HouseholdId == a.Transaction.HouseholdId && m.UserId == user.Id && m.Status == MemberStatus.Active &&
                     (m.Role == MemberRole.Owner || (m.Role == MemberRole.Admin && m.CanApproveExpenses))))

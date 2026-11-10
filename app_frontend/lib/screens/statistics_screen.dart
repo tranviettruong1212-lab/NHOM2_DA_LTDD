@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/currency_format.dart';
 import '../services/app_backends.dart';
 
 class StatisticsScreen extends StatefulWidget {
@@ -13,7 +14,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   int month = DateTime.now().month;
   int year = DateTime.now().year;
 
-  String money(double value) => '${value.toStringAsFixed(0)} đ';
+  String money(num value) => CurrencyFormat.format(value);
 
   @override
   Widget build(BuildContext context) {
@@ -192,9 +193,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Text(
-            value.toStringAsFixed(0),
+            CurrencyFormat.compact(value),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
           const SizedBox(height: 8),
           Container(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/currency_format.dart';
 import '../models/api_budget_model.dart';
 import '../services/api_client.dart';
 import '../services/app_backends.dart';
@@ -63,16 +64,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return 'Không tải được dữ liệu: $e';
   }
 
-  String _money(num value) {
-    final digits = value.round().toString();
-    final out = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      out.write(digits[i]);
-      final remaining = digits.length - i - 1;
-      if (remaining > 0 && remaining % 3 == 0) out.write('.');
-    }
-    return '${out.toString()} đ';
-  }
+  String _money(num value) => CurrencyFormat.format(value);
 
   String _periodLabel(int value) => switch (value) {
     1 => 'Hàng tuần',

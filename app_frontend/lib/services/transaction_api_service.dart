@@ -89,6 +89,7 @@ class TransactionApiService {
     final note = transaction.note.trim().isEmpty
         ? transaction.title.trim()
         : '${transaction.title.trim()}\n${transaction.note.trim()}';
+    final visibility = transaction.isHousehold ? 1 : 0;
     return {
       'accountId': accountId,
       'categoryId': category['id'] ?? category['Id'],
@@ -96,7 +97,8 @@ class TransactionApiService {
       'amount': transaction.amount,
       'transactionDate': transaction.date.toIso8601String(),
       'note': note,
-      'visibility': 0,
+      'visibility': visibility,
+      'householdId': transaction.isHousehold ? transaction.householdId : null,
       'sharedWithUserIds': <String>[],
     };
   }
@@ -126,6 +128,9 @@ class TransactionApiService {
     final note = rawNote.split(RegExp(r'\r?\n')).skip(1).join('\n').trim();
     final typeValue = _int(json['type'] ?? json['Type']);
     final amount = _double(json['amount'] ?? json['Amount']);
+    final visibility = _int(json['visibility'] ?? json['Visibility']);
+    final status = _int(json['status'] ?? json['Status']);
+    final householdId = (json['householdId'] ?? json['HouseholdId'])?.toString();
     final date =
         DateTime.tryParse(
           (json['transactionDate'] ?? json['TransactionDate'] ?? '').toString(),
@@ -151,6 +156,9 @@ class TransactionApiService {
       isPersisted: true,
       demoWalletId: marker?.group(1),
       demoKind: marker?.group(2),
+      isHousehold: visibility == 1,
+      householdId: householdId,
+      status: status,
     );
   }
 

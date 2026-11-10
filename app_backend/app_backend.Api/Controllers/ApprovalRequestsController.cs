@@ -13,7 +13,21 @@ public sealed class ApprovalRequestsController(ApprovalService approvals, Curren
     {
         var user = await currentUserService.GetUserAsync(User, ct); if (user is null) return Unauthorized();
         var rows = await approvals.ListPendingAsync(user, ct);
-        return Ok(rows.Select(a => new { a.Id, a.TransactionId, a.RequestedByUserId, a.Status, a.CreatedAt, a.Transaction!.HouseholdId, a.Transaction.Amount, a.Transaction.Type, a.Transaction.Note, a.Transaction.TransactionDate }));
+        return Ok(rows.Select(a => new {
+            a.Id,
+            a.TransactionId,
+            a.RequestedByUserId,
+            RequesterName = a.RequestedByUser?.DisplayName ?? a.RequestedByUser?.Email ?? "Thành viên",
+            RequesterEmail = a.RequestedByUser?.Email,
+            a.Status,
+            a.CreatedAt,
+            a.Transaction!.HouseholdId,
+            a.Transaction.Amount,
+            a.Transaction.Type,
+            a.Transaction.Note,
+            CategoryName = a.Transaction.Category?.Name ?? "Khác",
+            a.Transaction.TransactionDate
+        }));
     }
     public sealed record ReviewRequest(string? ReviewNote);
     [HttpPost("{id:guid}/approve")]

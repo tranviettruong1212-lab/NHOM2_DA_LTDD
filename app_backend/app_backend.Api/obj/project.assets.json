@@ -163,7 +163,7 @@
           }
         }
       },
-      "Microsoft.AspNetCore.Authentication.JwtBearer/8.0.32": {
+      "Microsoft.AspNetCore.Authentication.JwtBearer/8.0.33": {
         "type": "package",
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "7.7.3"
@@ -1840,10 +1840,10 @@
         "logo.png"
       ]
     },
-    "Microsoft.AspNetCore.Authentication.JwtBearer/8.0.32": {
-      "sha512": "BrL4xE4byyDVL9+gfhK48aK2MwsFSDV5/OwLn2jc6lkb5aYiAAO69ueK23Q9+G+qQm8HNagzt6o+3MHremFSFg==",
+    "Microsoft.AspNetCore.Authentication.JwtBearer/8.0.33": {
+      "sha512": "Hwq3HqpQD3Y3wLI0TX8o+KYDxbyYR7w5pUKx+Va2MtfgQ9rwh3RzH/dtiwPkmUPfTaT7a5771pmL9X1kqfWD5g==",
       "type": "package",
-      "path": "microsoft.aspnetcore.authentication.jwtbearer/8.0.32",
+      "path": "microsoft.aspnetcore.authentication.jwtbearer/8.0.33",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -1851,7 +1851,7 @@
         "THIRD-PARTY-NOTICES.TXT",
         "lib/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll",
         "lib/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.xml",
-        "microsoft.aspnetcore.authentication.jwtbearer.8.0.32.nupkg.sha512",
+        "microsoft.aspnetcore.authentication.jwtbearer.8.0.33.nupkg.sha512",
         "microsoft.aspnetcore.authentication.jwtbearer.nuspec"
       ]
     },
@@ -4296,23 +4296,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Admin\\.nuget\\packages\\": {},
+    "C:\\Users\\ADMIN\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Classwork\\Moblie App\\flutter_app\\do_an_ltdd\\app_backend\\app_backend.Api\\app_backend.csproj",
+      "projectUniqueName": "D:\\NHOM2_DA_LTDD-main\\app_backend\\app_backend.Api\\app_backend.csproj",
       "projectName": "app_backend",
-      "projectPath": "D:\\Classwork\\Moblie App\\flutter_app\\do_an_ltdd\\app_backend\\app_backend.Api\\app_backend.csproj",
-      "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-      "outputPath": "D:\\Classwork\\Moblie App\\flutter_app\\do_an_ltdd\\app_backend\\app_backend.Api\\obj\\",
+      "projectPath": "D:\\NHOM2_DA_LTDD-main\\app_backend\\app_backend.Api\\app_backend.csproj",
+      "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
+      "outputPath": "D:\\NHOM2_DA_LTDD-main\\app_backend\\app_backend.Api\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\ADMIN\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -4391,7 +4391,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

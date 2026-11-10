@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/currency_format.dart';
 import '../models/bank_wallet.dart';
 import '../services/app_backends.dart';
 import 'demo_transaction_bundle_screen.dart';
@@ -8,7 +9,7 @@ import '../screens/linked_flow_screen.dart';
 class BankWalletsScreen extends StatelessWidget {
   const BankWalletsScreen({super.key});
 
-  String money(double amount) => '${amount.toStringAsFixed(0)} đ';
+  String money(num amount) => CurrencyFormat.format(amount);
 
   @override
   Widget build(BuildContext context) {

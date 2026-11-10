@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../core/currency_format.dart';
 import '../models/transaction_model.dart';
 import '../services/app_backends.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  String money(double amount) => '${amount.toStringAsFixed(0)} đ';
+  String money(num amount) => CurrencyFormat.format(amount);
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +60,11 @@ class HomeScreen extends StatelessWidget {
               .take(5)
               .toList();
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
+          return RefreshIndicator(
+            onRefresh: () => backend.loadFromApi(),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
               Card(
                 color: Theme.of(context).colorScheme.primaryContainer,
                 child: Padding(
@@ -269,7 +272,8 @@ class HomeScreen extends StatelessWidget {
                   );
                 }),
             ],
-          );
+          ),
+        );
         },
       ),
     );

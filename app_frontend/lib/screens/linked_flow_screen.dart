@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/currency_format.dart';
 import '../services/app_backends.dart';
 
 class LinkedFlowScreen extends StatefulWidget {
@@ -13,7 +14,7 @@ class _LinkedFlowScreenState extends State<LinkedFlowScreen> {
   int month = DateTime.now().month;
   int year = DateTime.now().year;
 
-  String money(double value) => '${value.toStringAsFixed(0)} đ';
+  String money(num value) => CurrencyFormat.format(value);
 
   @override
   Widget build(BuildContext context) {
@@ -254,12 +255,12 @@ class _LinkedFlowScreenState extends State<LinkedFlowScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Thu ${income.toStringAsFixed(0)}',
+                  'Thu ${CurrencyFormat.compact(income)}',
                   style: const TextStyle(fontSize: 10, color: Colors.green),
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  'Chi ${expense.toStringAsFixed(0)}',
+                  'Chi ${CurrencyFormat.compact(expense)}',
                   style: const TextStyle(fontSize: 10, color: Colors.red),
                   overflow: TextOverflow.ellipsis,
                 ),

@@ -19,6 +19,11 @@ class MoneyTransaction {
   // Loại giao dịch mô phỏng: income hoặc expense.
   final String? demoKind;
 
+  // Giao dịch thuộc nhóm gia đình
+  final bool isHousehold;
+  final String? householdId;
+  final int? status;
+
   MoneyTransaction({
     required this.id,
     required this.title,
@@ -31,5 +36,8 @@ class MoneyTransaction {
     this.isPersisted = false,
     this.demoWalletId,
     this.demoKind,
+    this.isHousehold = false,
+    this.householdId,
+    this.status,
   });
 }

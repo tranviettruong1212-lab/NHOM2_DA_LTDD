@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../core/currency_format.dart';
 import '../models/transaction_model.dart';
+import '../services/api_client.dart';
 import '../services/app_backends.dart';
 
 class TransactionFormScreen extends StatefulWidget {
@@ -15,6 +17,7 @@ class TransactionFormScreen extends StatefulWidget {
 class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _backend = MoneyMateBackend.instance;
+  final _api = ApiClient.instance;
 
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
@@ -24,6 +27,12 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   late String _category;
   late DateTime _date;
   bool _saving = false;
+
+  // Hộ gia đình
+  String? _householdId;
+  String? _householdName;
+  double _approvalThreshold = 1000000.0;
+  bool _isHousehold = false;
 
   final List<String> _categories = [
     'Ăn uống',
@@ -53,6 +62,31 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     _type = t?.type ?? TransactionType.expense;
     _category = t?.category ?? 'Ăn uống';
     _date = t?.date ?? DateTime.now();
+    _isHousehold = t?.isHousehold ?? false;
+
+    _amountController.addListener(() => setState(() {}));
+    _loadHouseholdInfo();
+  }
+
+  Future<void> _loadHouseholdInfo() async {
+    try {
+      final res = await _api.get('/api/households/mine');
+      if (res is Map && mounted) {
+        final id = (res['householdId'] ?? res['HouseholdId'])?.toString();
+        final name = (res['householdName'] ?? res['HouseholdName'])?.toString();
+        final threshold = (res['approvalThreshold'] ?? res['ApprovalThreshold'] as num?)?.toDouble() ?? 1000000.0;
+        if (id != null && id.isNotEmpty) {
+          setState(() {
+            _householdId = id;
+            _householdName = name ?? 'Gia đình';
+            _approvalThreshold = threshold;
+            if (widget.transaction != null) {
+              _isHousehold = widget.transaction!.isHousehold;
+            }
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -79,14 +113,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final parsedAmount = double.parse(_amountController.text.trim());
     final transaction = MoneyTransaction(
       id: widget.transaction?.id ?? '',
       title: _titleController.text.trim(),
-      amount: double.parse(_amountController.text.trim()),
+      amount: parsedAmount,
       type: _type,
       category: _category,
       date: _date,
       note: _noteController.text.trim(),
+      isHousehold: _isHousehold && _householdId != null,
+      householdId: _isHousehold ? _householdId : null,
     );
 
     setState(() => _saving = true);
@@ -96,7 +133,18 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       } else {
         await _backend.addTransaction(transaction);
       }
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        final needsApproval = _isHousehold && _type == TransactionType.expense && parsedAmount > _approvalThreshold;
+        if (needsApproval) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Giao dịch đã được gửi và đang chờ Trưởng nhóm phê duyệt.'),
+              backgroundColor: Color(0xFFD97706),
+            ),
+          );
+        }
+        Navigator.pop(context);
+      }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -110,6 +158,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentAmount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final isOverThreshold = _isHousehold && _type == TransactionType.expense && currentAmount > _approvalThreshold;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Sửa giao dịch' : 'Thêm giao dịch'),
@@ -140,6 +191,40 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 },
               ),
               const SizedBox(height: 20),
+
+              if (_householdId != null) ...[
+                Card(
+                  color: const Color(0xFFF1F5F9),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.group_outlined, color: Color(0xFF2457C5)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Phạm vi giao dịch', style: TextStyle(fontWeight: FontWeight.bold)),
+                              Text(
+                                _isHousehold
+                                    ? 'Chia sẻ cho nhóm "$_householdName"'
+                                    : 'Chỉ lưu trong tài chính cá nhân',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _isHousehold,
+                          onChanged: (val) => setState(() => _isHousehold = val),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
 
               TextFormField(
                 controller: _titleController,
@@ -172,6 +257,31 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   return null;
                 },
               ),
+
+              if (isOverThreshold) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Color(0xFFD97706), size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Khoản chi này vượt ngưỡng duyệt chi gia đình (${CurrencyFormat.format(_approvalThreshold)}). Giao dịch sẽ được gửi vào danh sách chờ phê duyệt.',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(

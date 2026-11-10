@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../core/currency_format.dart';
 import '../services/api_client.dart';
+import 'approval_requests_screen.dart';
 import 'invitations_screen.dart';
 import 'household_dialogs.dart';
 
@@ -19,6 +21,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   Map<String, dynamic>? _household;
   List<Map<String, dynamic>> _members = [];
   List<Map<String, dynamic>> _notifications = [];
+  int _pendingApprovalCount = 0;
 
   dynamic _value(Map<String, dynamic> data, String camel, String pascal) =>
       data[camel] ?? data[pascal];
@@ -40,6 +43,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     Map<String, dynamic>? household;
     List<Map<String, dynamic>> members = [];
     List<Map<String, dynamic>> notifications = [];
+    int pendingCount = 0;
     String? error;
 
     try {
@@ -58,6 +62,18 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                 .whereType<Map>()
                 .map((m) => Map<String, dynamic>.from(m))
                 .toList();
+          }
+
+          final role = _value(household, 'role', 'Role');
+          final roleNum = role is num ? role.toInt() : int.tryParse(role?.toString() ?? '') ?? 2;
+          final canApprove = roleNum == 0 || _value(household, 'canApproveExpenses', 'CanApproveExpenses') == true;
+          if (canApprove) {
+            try {
+              final approvals = await _api.get('/api/approval-requests');
+              if (approvals is List) {
+                pendingCount = approvals.length;
+              }
+            } catch (_) {}
           }
         }
       }
@@ -85,6 +101,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
       _household = household;
       _members = members;
       _notifications = notifications;
+      _pendingApprovalCount = pendingCount;
       _error = error;
       _loading = false;
     });
@@ -433,12 +450,41 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                             Text('Vai trò của bạn: ${_roleName(role)}'),
                             const SizedBox(height: 4),
                             Text(
-                              'Ngưỡng duyệt chi: ${threshold.toStringAsFixed(0)} đ',
+                              'Ngưỡng duyệt chi: ${CurrencyFormat.format(threshold)}',
                             ),
                           ],
                         ),
                       ),
                     ),
+                    if (role == 0 || (_value(household, 'canApproveExpenses', 'CanApproveExpenses') == true)) ...[
+                      const SizedBox(height: 12),
+                      Card(
+                        color: _pendingApprovalCount > 0 ? const Color(0xFFFFF7ED) : null,
+                        child: ListTile(
+                          leading: Badge(
+                            isLabelVisible: _pendingApprovalCount > 0,
+                            label: Text('$_pendingApprovalCount'),
+                            child: const Icon(Icons.fact_check_outlined, color: Color(0xFF2457C5)),
+                          ),
+                          title: const Text('Phê duyệt chi tiêu gia đình', style: TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(
+                            _pendingApprovalCount > 0
+                                ? '$_pendingApprovalCount yêu cầu chi tiêu đang chờ duyệt'
+                                : 'Không có yêu cầu chờ duyệt',
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ApprovalRequestsScreen(),
+                              ),
+                            );
+                            _load();
+                          },
+                        ),
+                      ),
+                    ],
                     if (role == 0) ...[
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
